@@ -424,6 +424,79 @@ local ssegg = AutoFarm:AddSwitch("Auto Egg (60 Min)", function(p383)
     u377 = p383
 end)
 
+local AutoEquipTools = AutoFarm:AddFolder("Auto Tools")
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local function autoEquipItem(toolName, globalVar, customEventName, customEventArg, defaultState)
+    _G[globalVar] = defaultState or false
+
+    local switch = AutoEquipTools:AddSwitch("Auto " .. toolName, function(Value)
+        _G[globalVar] = Value
+        
+        -- Tool equip loop set to task.wait(5)
+        task.spawn(function()
+            while _G[globalVar] do
+                task.wait(5)
+                if not _G[globalVar] then break end
+                
+                local character = LocalPlayer.Character
+                local backpack = LocalPlayer.Backpack
+                
+                if character and character:FindFirstChildOfClass("Humanoid") then
+                    local humanoid = character:FindFirstChildOfClass("Humanoid")
+                    local equipped = character:FindFirstChild(toolName)
+                    
+                    if not equipped and backpack then
+                        local tool = backpack:FindFirstChild(toolName)
+                        if tool then
+                            humanoid:EquipTool(tool)
+                        end
+                    end
+                end
+            end
+        end)
+        
+        -- Muscle event loop remains fast
+        task.spawn(function()
+            while _G[globalVar] do
+                task.wait(0.1)
+                if not _G[globalVar] then break end
+                
+                local muscleEvent = LocalPlayer:FindFirstChild("muscleEvent")
+                if muscleEvent then
+                    if customEventName then
+                        muscleEvent:FireServer(customEventName, customEventArg)
+                    else
+                        muscleEvent:FireServer("rep")
+                    end
+                end
+            end
+        end)
+        
+        if not Value then
+            local character = LocalPlayer.Character
+            local backpack = LocalPlayer.Backpack
+            if character and backpack then
+                local equipped = character:FindFirstChild(toolName)
+                if equipped then
+                    equipped.Parent = backpack
+                end
+            end
+        end
+    end)
+
+    if defaultState then
+        switch:Set(true)
+    end
+end
+
+autoEquipItem("Weight", "AutoWeight", nil, nil, true)
+autoEquipItem("Pushups", "AutoPushups")
+autoEquipItem("Handstands", "AutoHandstands")
+autoEquipItem("Situps", "AutoSitups")
+
 local Industrial = AutoFarm:AddFolder("Auto Farm Industrial Gym")
 
 local function setupFarm(folder, switchName, cframeData, startEnabled)
