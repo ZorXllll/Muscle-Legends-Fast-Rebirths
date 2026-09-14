@@ -1,0 +1,574 @@
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/ZorXllll/Zorx-UI-Library-V2/refs/heads/main/ZorX-Private"))()
+
+local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+
+local window = library:AddWindow("ZorX-Private | Welcome, " .. localPlayer.DisplayName, {
+    title_bar = {Color3.fromRGB(180, 0, 0), Color3.fromRGB(40, 0, 0), Color3.fromRGB(0, 0, 0)},
+    title_bar_transparency = 0.2,
+    background = {Color3.fromRGB(40, 0, 0), Color3.fromRGB(0, 0, 0), Color3.fromRGB(80, 0, 0)},
+    background_transparency = 0.1,
+    main_color = Color3.fromRGB(200, 0, 0),
+    min_size = Vector2.new(300, 300),
+    can_resize = true
+})
+
+task.spawn(function()
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("ParticleEmitter") or v:IsA("Smoke") or v:IsA("Fire") or v:IsA("Sparkles") then
+            v.Enabled = false
+        end
+    end
+
+    local lighting = game:GetService("Lighting")
+    lighting.GlobalShadows = false
+    lighting.FogEnd = 9e9
+    lighting.Brightness = 0
+
+    settings().Rendering.QualityLevel = 1
+
+    for _, v in pairs(game:GetDescendants()) do
+        if v:IsA("Decal") or v:IsA("Texture") then
+            v.Transparency = 1
+        elseif v:IsA("BasePart") and not v:IsA("MeshPart") then
+            v.Material = Enum.Material.SmoothPlastic
+            if v.Parent and (v.Parent:FindFirstChild("Humanoid") or v.Parent.Parent:FindFirstChild("Humanoid")) then
+            else
+                v.Reflectance = 0
+            end
+        end
+    end
+
+    for _, v in pairs(lighting:GetChildren()) do
+        if v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") then
+            v.Enabled = false
+        end
+    end
+end)
+
+local AutoFarm = window:AddTab("Farm")
+AutoFarm:Show()
+
+local TeleportService = game:GetService("TeleportService")
+local CoreGui = game:GetService("CoreGui")
+local PlaceId = game.PlaceId
+local autoReconnectEnabled = false
+
+-- Polling loop para masigurong mahuhuli kahit "Please check your internet" error prompt
+task.spawn(function()
+    while task.wait(1) do
+        if autoReconnectEnabled then
+            pcall(function()
+                local promptGui = CoreGui:FindFirstChild("RobloxPromptGui")
+                if promptGui then
+                    local promptOverlay = promptGui:FindFirstChild("promptOverlay")
+                    if promptOverlay then
+                        for _, child in ipairs(promptOverlay:GetChildren()) do
+                            if child.Name == "ErrorPrompt" then
+                                TeleportService:Teleport(PlaceId)
+                                task.wait(3)
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+-- Switch para i-on/off ang auto reconnect
+local autoreconnect = AutoFarm:AddSwitch("Enable Auto-Reconnect", function(bool)
+    autoReconnectEnabled = bool
+end)
+
+autoreconnect:Set(true)
+
+local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local AntiAFKConnection = nil
+local AFKTimerThread = nil
+local RainbowThread = nil
+
+-- 1. Create Standalone ScreenGui Overlay
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Elerium_AFKOverlay"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Protect GUI from detection if supported by executor
+pcall(function()
+    if syn and syn.protect_gui then
+        syn.protect_gui(ScreenGui)
+    elseif gethui then
+        ScreenGui.Parent = gethui()
+    end
+end)
+
+if not ScreenGui.Parent then
+    ScreenGui.Parent = CoreGui
+end
+
+-- 2. Build the Timer Frame Layout (Fixed Position & Fully Transparent)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 500, 0, 80)
+MainFrame.Position = UDim2.new(0.5, -250, 0.00, 0)
+MainFrame.BackgroundTransparency = 1
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = false 
+MainFrame.Draggable = false 
+MainFrame.Visible = false 
+MainFrame.Parent = ScreenGui
+
+-- Rainbow Text Label (ANTI AFK Text)
+local TextLabel = Instance.new("TextLabel")
+TextLabel.Size = UDim2.new(1, 0, 1, 0)
+TextLabel.BackgroundTransparency = 1
+TextLabel.Text = "ANTI AFK: 00:00:00"
+TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel.Font = Enum.Font.GothamBold
+TextLabel.TextSize = 25 
+TextLabel.TextXAlignment = Enum.TextXAlignment.Center
+TextLabel.TextYAlignment = Enum.TextYAlignment.Center
+TextLabel.Parent = MainFrame
+
+-- 3. Add to your Elerium Tab
+local AntiAFKSwitch = AutoFarm:AddSwitch("Anti-AFK ☕", function(bool)
+    if bool then
+        -- Make the ScreenGui container visible
+        MainFrame.Visible = true
+        
+        -- Start Anti-AFK connection
+        if not AntiAFKConnection then
+            AntiAFKConnection = player.Idled:Connect(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        end
+        
+        -- Start clock thread
+        if not AFKTimerThread then
+            AFKTimerThread = task.spawn(function()
+                local startTime = os.time()
+                while true do
+                    local elapsed = os.time() - startTime
+                    local hours = math.floor(elapsed / 3600)
+                    local minutes = math.floor((elapsed % 3600) / 60)
+                    local seconds = elapsed % 60
+                    
+                    TextLabel.Text = string.format("ANTI AFK: %02d:%02d:%02d", hours, minutes, seconds)
+                    task.wait(1)
+                end
+            end)
+        end
+
+        -- Start Rainbow Text dynamic loop thread
+        if not RainbowThread then
+            RainbowThread = task.spawn(function()
+                local hue = 0
+                while true do
+                    TextLabel.TextColor3 = Color3.fromHSV(hue, 1, 1)
+                    hue = hue + 0.01
+                    if hue >= 1 then
+                        hue = 0
+                    end
+                    task.wait(0.03)
+                end
+            end)
+        end
+    else
+        -- Hide the ScreenGui container completely
+        MainFrame.Visible = false
+        
+        -- Stop everything safely
+        if AntiAFKConnection then
+            AntiAFKConnection:Disconnect()
+            AntiAFKConnection = nil
+        end
+        
+        if AFKTimerThread then
+            task.cancel(AFKTimerThread)
+            AFKTimerThread = nil
+        end
+
+        if RainbowThread then
+            task.cancel(RainbowThread)
+            RainbowThread = nil
+        end
+    end
+end)
+
+-- Visually toggle Elerium switch checkmark to ON immediately upon loading script
+AntiAFKSwitch:Set(true)
+
+local hideswitch = AutoFarm:AddSwitch("Hide Pets", false, function(state)
+    local args = {
+        [1] = state and "hidePets" or "showPets"
+    }
+
+    game:GetService("ReplicatedStorage").rEvents.showPetsEvent:FireServer(unpack(args))
+end)
+
+hideswitch:Set(true)
+
+AutoFarm:AddTextBox('Enter Rep Speed', function(p273)
+    local v274 = tonumber(p273)
+    if v274 and 0 < v274 then
+        getgenv().RepSpeed = v274
+        print('Rep speed set to:', v274)
+    else
+        warn('Invalid number entered.')
+    end
+end)
+
+local RepSpeed = AutoFarm:AddSwitch('Start Gaining Strength', function(p275)
+    getgenv().isGrinding = p275
+    if p275 then
+        local threads = getgenv().ThreadCount or 1
+        for _ = 1, threads do
+            task.spawn(function()
+                while getgenv().isGrinding do
+                    local v276, v277 = pcall(function()
+                        game:GetService('Players').LocalPlayer.muscleEvent:FireServer('rep')
+                    end)
+                    if not v276 then
+                        warn('Failed to fire rep:', v277)
+                    end
+                    task.wait(getgenv().RepSpeed or 0.01)
+                end
+            end)
+        end
+    end
+end)
+
+RepSpeed:Set(true)
+
+AutoFarm:AddButton("Equip Rep Pets", function()
+    local player = game:GetService("Players").LocalPlayer
+    local petsFolder = player:FindFirstChild("petsFolder")
+    
+    if petsFolder then
+        for _, folder in pairs(petsFolder:GetChildren()) do
+            if folder:IsA("Folder") then
+                for _, pet in pairs(folder:GetChildren()) do
+                    game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("unequipPet", pet)
+                end
+            end
+        end
+    end
+    task.wait(0.2)
+
+    local omegas = {}
+    local swifts = {}
+    local hounds = {}
+    local rares = {}
+    local rareBosses = {}
+
+    if petsFolder and petsFolder:FindFirstChild("Unique") then
+        for _, pet in pairs(petsFolder.Unique:GetChildren()) do
+            if pet.Name == "Omega Overlord" then table.insert(omegas, pet)
+            elseif pet.Name == "Swift Samurai" then table.insert(swifts, pet)
+            elseif pet.Name == "Powercore Hound" then table.insert(hounds, pet)
+            end
+        end
+    end
+
+    if petsFolder and petsFolder:FindFirstChild("Rare") then
+        for _, pet in pairs(petsFolder.Rare:GetChildren()) do
+            table.insert(rares, pet)
+            if pet.Name == "Rare Boss" then
+                table.insert(rareBosses, pet)
+            end
+        end
+    end
+
+    local equippedCount = 0
+    local currentPercent = 0
+    local maxSlots = 9
+
+    for i = #rareBosses, 1, -1 do
+        if equippedCount < maxSlots then
+            local pet = table.remove(rareBosses, i)
+            game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("equipPet", pet)
+            equippedCount = equippedCount + 1
+            task.wait(0.1)
+        end
+    end
+
+    for i = #omegas, 1, -1 do
+        if equippedCount < maxSlots and currentPercent < 100 then
+            local pet = table.remove(omegas, i)
+            game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("equipPet", pet)
+            currentPercent = currentPercent + 20
+            equippedCount = equippedCount + 1
+            task.wait(0.1)
+        end
+    end
+
+    for i = #swifts, 1, -1 do
+        if equippedCount < maxSlots and currentPercent < 100 then
+            local pet = table.remove(swifts, i)
+            game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("equipPet", pet)
+            currentPercent = currentPercent + 15
+            equippedCount = equippedCount + 1
+            task.wait(0.1)
+        end
+    end
+
+    if currentPercent >= 100 then
+        for i = #hounds, 1, -1 do
+            if equippedCount < maxSlots then
+                local pet = table.remove(hounds, i)
+                game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("equipPet", pet)
+                equippedCount = equippedCount + 1
+                task.wait(0.1)
+            end
+        end
+    end
+
+    for i = #rares, 1, -1 do
+        if equippedCount < maxSlots then
+            local pet = table.remove(rares, i)
+            game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("equipPet", pet)
+            equippedCount = equippedCount + 1
+            task.wait(0.1)
+        end
+    end
+end)
+
+local u377 = false
+
+local function u382()
+    pcall(function()
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local backpack = player:FindFirstChild('Backpack')
+        
+        local proteinEgg = (character and character:FindFirstChild('Protein Egg')) or (backpack and backpack:FindFirstChild('Protein Egg'))
+        
+        if proteinEgg then
+            local args = {
+                [1] = "proteinEgg",
+                [2] = proteinEgg
+            }
+            player.muscleEvent:FireServer(unpack(args))
+        end
+    end)
+end
+
+task.spawn(function()
+    while true do
+        if u377 then
+            u382()
+            
+            local elapsed = 0
+            while elapsed < 1800 and u377 do
+                task.wait(1)
+                elapsed = elapsed + 1
+            end
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+local segg = AutoFarm:AddSwitch("Auto Egg (30 Min)", function(p383)
+    u377 = p383
+end)
+
+segg:Set(true)
+
+local u377 = false
+
+local function u382()
+    pcall(function()
+        local player = game.Players.LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        local backpack = player:FindFirstChild('Backpack')
+        
+        local proteinEgg = (character and character:FindFirstChild('Protein Egg')) or (backpack and backpack:FindFirstChild('Protein Egg'))
+        
+        if proteinEgg then
+            local args = {
+                [1] = "proteinEgg",
+                [2] = proteinEgg
+            }
+            player.muscleEvent:FireServer(unpack(args))
+        end
+    end)
+end
+
+task.spawn(function()
+    while true do
+        if u377 then
+            u382() -- Kakain agad pagka-on
+            
+            -- Maghihintay ng 60 mins (3600 seconds) habang naka-check kung naka-on pa
+            local elapsed = 0
+            while elapsed < 3600 and u377 do
+                task.wait(1)
+                elapsed = elapsed + 1
+            end
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+local ssegg = AutoFarm:AddSwitch("Auto Egg (60 Min)", function(p383)
+    u377 = p383
+end)
+
+local Industrial = AutoFarm:AddFolder("Auto Farm Industrial Gym")
+
+local function setupFarm(folder, switchName, cframeData, startEnabled)
+    local toggleState = false
+    
+    local switch = folder:AddSwitch(switchName, function(State)
+        toggleState = State
+        if State then
+            task.spawn(function()
+                local vim = game:GetService("VirtualInputManager")
+                local player = game:GetService("Players").LocalPlayer
+                
+                while toggleState do
+                    local char = player.Character
+                    if char and char.PrimaryPart then
+                        char:SetPrimaryPartCFrame(cframeData)
+                        vim:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                        task.wait()
+                        vim:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                        player.muscleEvent:FireServer("rep")
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end)
+
+    if startEnabled then
+        task.spawn(function()
+            task.wait(0.5)
+            if switch and typeof(switch.Set) == "function" then
+                pcall(function()
+                    switch:Set(true)
+                end)
+            else
+                toggleState = true
+                task.spawn(function()
+                    local vim = game:GetService("VirtualInputManager")
+                    local player = game:GetService("Players").LocalPlayer
+                    while toggleState do
+                        local char = player.Character
+                        if char and char.PrimaryPart then
+                            char:SetPrimaryPartCFrame(cframeData)
+                            vim:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                            task.wait()
+                            vim:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                            player.muscleEvent:FireServer("rep")
+                        end
+                        task.wait(0.1)
+                    end
+                end)
+            end
+        end)
+    end
+end
+
+setupFarm(Industrial, "Auto Industrial Bench", CFrame.new(-5014.51611, 115.208725, 4476.58594, -0.999575138, -4.37821654e-08, 0.0291465465, -4.3081716e-08, 1, 2.46598688e-08, -0.0291465465, 2.33937101e-08, -0.999575138), false)
+setupFarm(Industrial, "Auto Industrial Boulder", CFrame.new(-5458.48438, 60.9902954, 5232.47803, 0.0101241013, -1.71823249e-08, 0.99994874, -4.081814e-08, 1, 1.75964736e-08, -0.99994874, -4.09941947e-08, 0.0101241013), false)
+setupFarm(Industrial, "Auto Industrial Bar Lift", CFrame.new(-5492.37158, 58.3428535, 4643.16602, 0.0436159857, 4.01579143e-08, 0.999048352, 1.37346747e-08, 1, -4.07957863e-08, -0.999048352, 1.55009534e-08, 0.0436159857), false)
+setupFarm(Industrial, "Auto Industrial Squat", CFrame.new(-5219.06494, 58.3428574, 5413.42725, 0.999914527, -3.62760821e-09, -0.0130761229, 2.43159137e-09, 1, -9.14816027e-08, 0.0130761229, 9.144199e-08, 0.999914527), true)
+
+local Tab = window:AddTab("Fast Rebirths")
+
+local fastRebirth = false
+
+local Fastrebs = Tab:AddSwitch("Fast Rebirth", function(p52)
+    fastRebirth = p52
+    if fastRebirth then
+        task.spawn(function()
+            local _ReplicatedStorage = game:GetService('ReplicatedStorage')
+            local _LocalPlayer4 = game:GetService('Players').LocalPlayer
+            
+            local function unequipAll()
+                local _petsFolder = _LocalPlayer4:FindFirstChild('petsFolder')
+                if _petsFolder then
+                    for _, folder in ipairs(_petsFolder:GetChildren()) do
+                        if folder:IsA('Folder') then
+                            for _, pet in ipairs(folder:GetChildren()) do
+                                pcall(function()
+                                    _ReplicatedStorage.rEvents.equipPetEvent:FireServer('unequipPet', pet)
+                                end)
+                            end
+                        end
+                    end
+                end
+            end
+            
+            local function equipPets(...)
+                local targetPets = { ... }
+                local _petsFolder = _LocalPlayer4:FindFirstChild('petsFolder')
+                if not _petsFolder then return end
+                
+                for _, targetName in ipairs(targetPets) do
+                    for _, folder in ipairs(_petsFolder:GetChildren()) do
+                        if folder:IsA('Folder') then
+                            for _, pet in ipairs(folder:GetChildren()) do
+                                if string.find(pet.Name:lower(), targetName:lower(), 1, true) then
+                                    _ReplicatedStorage.rEvents.equipPetEvent:FireServer('equipPet', pet)
+                                    task.wait(0.05)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            
+            while fastRebirth do
+                local v81 = 10000 + 5000 * _LocalPlayer4.leaderstats.Rebirths.Value
+                if _LocalPlayer4:FindFirstChild('ultimatesFolder') and _LocalPlayer4.ultimatesFolder:FindFirstChild('Golden Rebirth') then
+                    local _Value = _LocalPlayer4.ultimatesFolder['Golden Rebirth'].Value
+                    v81 = math.floor(v81 * (1 - _Value * 0.1))
+                end
+                
+                -- Bawasan ng 50% ang target strength requirement para sa Tribal Overlord
+                v81 = math.floor(v81 * 0.5)
+                
+                -- Equip grinding pets
+                unequipAll()
+                task.wait(0.1)
+                equipPets('Swift Samurai', 'Rare Boss Pet')
+                
+                -- Mag-ipon ng strength hanggang sa discounted target (200M)
+                while fastRebirth and _LocalPlayer4.leaderstats.Strength.Value < v81 do
+                    task.wait(0.1)
+                end
+                
+                if not fastRebirth then break end
+                
+                -- Instant swap sa Tribal Overlord
+                unequipAll()
+                task.wait(0.1)
+                equipPets('Tribal Overlord')
+                task.wait(0.15)
+                
+                -- Rebirth Loop
+                local _Value2 = _LocalPlayer4.leaderstats.Rebirths.Value
+                repeat
+                    _ReplicatedStorage.rEvents.rebirthRemote:InvokeServer('rebirthRequest')
+                    task.wait(0.05)
+                until _Value2 < _LocalPlayer4.leaderstats.Rebirths.Value or not fastRebirth
+                
+                task.wait()
+            end
+        end)
+    end
+end)
+
+Fastrebs:Set(true)
