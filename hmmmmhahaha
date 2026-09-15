@@ -1087,16 +1087,15 @@ _G.LocalTracker.Utils.computeAndRenderStat = function(name, currentVal)
     
     if gained > 0 and activeRate > 0 then
         _G.LocalTracker.Utils.updateLabelText(_G.LocalTracker.Labels[name], string.format(
-            "%s: %s (+%s) | M: %s | H: %s | D: %s | W: %s | MO: %s",
+            "%s: %s (+%s) | M: %s | H: %s | D: %s | W: %s",
             name, formattedCurrent, _G.LocalTracker.Utils.formatNumber(gained),
             _G.LocalTracker.Utils.formatNumber(activeRate * 60), 
             _G.LocalTracker.Utils.formatNumber(activeRate * 3600), 
             _G.LocalTracker.Utils.formatNumber(activeRate * 86400), 
-            _G.LocalTracker.Utils.formatNumber(activeRate * 604800),
-            _G.LocalTracker.Utils.formatNumber(activeRate * 2592000)
+            _G.LocalTracker.Utils.formatNumber(activeRate * 604800)
         ))
     else
-        _G.LocalTracker.Utils.updateLabelText(_G.LocalTracker.Labels[name], string.format("%s: %s (+0) | M: 0 | H: 0 | D: 0 | W: 0 | MO: 0", name, formattedCurrent))
+        _G.LocalTracker.Utils.updateLabelText(_G.LocalTracker.Labels[name], string.format("%s: %s (+0) | M: 0 | H: 0 | D: 0 | W: 0", name, formattedCurrent))
     end
 end
 
@@ -1134,13 +1133,13 @@ for i = 1, #_G.LocalTracker.Config.Stats do
     _G.LocalTracker.StartStats[name] = 0
     
     local foundObj = _G.LocalTracker.Utils.scanForStatFast(LocalPlayer, name)
-    local currentText = name .. ": 0 (+0) | M: 0 | H: 0 | D: 0 | W: 0 | MO: 0"
+    local currentText = name .. ": 0 (+0) | M: 0 | H: 0 | D: 0 | W: 0"
     
     if foundObj then
         local initialVal = tonumber(foundObj.Value) or 0
         _G.LocalTracker.StartStats[name] = initialVal
         _G.LocalTracker.LastValues[name] = initialVal
-        currentText = string.format("%s: %s (+0) | M: 0 | H: 0 | D: 0 | W: 0 | MO: 0", name, _G.LocalTracker.Utils.formatNumber(initialVal))
+        currentText = string.format("%s: %s (+0) | M: 0 | H: 0 | D: 0 | W: 0", name, _G.LocalTracker.Utils.formatNumber(initialVal))
     end
     
     _G.LocalTracker.Labels[name] = statsTab:AddLabel(currentText)
@@ -1201,7 +1200,7 @@ Players.PlayerAdded:Connect(function(p)
 end)
 
 for _, name in ipairs(_G.LocalTracker.Config.Stats) do
-    _G.SpyCore.SpyState.labels[name] = spyTab:AddLabel(name .. ": N/A (+0) | M: 0 | H: 0 | D: 0 | W: 0 | MO: 0")
+    _G.SpyCore.SpyState.labels[name] = spyTab:AddLabel(name .. ": N/A (+0) | M: 0 | H: 0 | D: 0 | W: 0")
 end
 
 ---------------------------------------------------------
@@ -1278,23 +1277,22 @@ task.spawn(function()
                     
                     if gained > 0 and r > 0 then
                         _G.LocalTracker.Utils.updateLabelText(labelObj, string.format(
-                            "%s: %s (+%s) | M: %s | H: %s | D: %s | W: %s | MO: %s",
+                            "%s: %s (+%s) | M: %s | H: %s | D: %s | W: %s",
                             name, _G.LocalTracker.Utils.formatNumber(currentVal), _G.LocalTracker.Utils.formatNumber(gained),
                             _G.LocalTracker.Utils.formatNumber(r * 60), 
                             _G.LocalTracker.Utils.formatNumber(r * 3600), 
                             _G.LocalTracker.Utils.formatNumber(r * 86400), 
-                            _G.LocalTracker.Utils.formatNumber(r * 604800), 
-                            _G.LocalTracker.Utils.formatNumber(r * 2592000)
+                            _G.LocalTracker.Utils.formatNumber(r * 604800)
                         ))
                     else
-                        _G.LocalTracker.Utils.updateLabelText(labelObj, string.format("%s: %s (+0) | M: 0 | H: 0 | D: 0 | W: 0 | MO: 0", name, _G.LocalTracker.Utils.formatNumber(currentVal)))
+                        _G.LocalTracker.Utils.updateLabelText(labelObj, string.format("%s: %s (+0) | M: 0 | H: 0 | D: 0 | W: 0", name, _G.LocalTracker.Utils.formatNumber(currentVal)))
                     end
                 end
             end
         else
             for _, name in ipairs(_G.LocalTracker.Config.Stats) do
                 if S.labels[name] then
-                    _G.LocalTracker.Utils.updateLabelText(S.labels[name], name .. ": N/A (+0) | M: 0 | H: 0 | D: 0 | W: 0 | MO: 0")
+                    _G.LocalTracker.Utils.updateLabelText(S.labels[name], name .. ": N/A (+0) | M: 0 | H: 0 | D: 0 | W: 0")
                 end
             end
         end
