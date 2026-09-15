@@ -647,42 +647,19 @@ end)
 
 Fastrebs:Set(true)
 
-local isLocked = false
-local savedCFrame = nil -- Dito itatabi ang eksaktong lokasyon mo
-local player = game:GetService("Players").LocalPlayer
-
--- Function na awtomatikong magbabalik at magla-lock sa iyo pagka-respawn
-local function applyLock(character)
-    if isLocked and savedCFrame then
-        local rootPart = character:WaitForChild("HumanoidRootPart", 5)
-        if rootPart then
-            task.wait(0.2) -- Safe delay para hindi mag-glitch ang loading ng laro
-            rootPart.CFrame = savedCFrame -- Ite-teleport ka pabalik sa tinagong pwesto
-            task.wait(0.05)
-            rootPart.Anchored = true -- Ika-lock ka ulit sa pwestong iyon
-        end
-    end
-end
-
--- Taga-bantay tuwing namamatay at nabubuhay ka ulit
-player.CharacterAdded:Connect(applyLock)
-
--- Ang tamang Elerium V2 Switch Element
-Tab:AddSwitch("Lock Position", function(state)
-    isLocked = state
-    
-    if player.Character then
-        local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
-        if rootPart then
-            if state then
-                -- Pagka-on ng switch, ise-save ang kasalukuyang pwesto mo ngayon
-                savedCFrame = rootPart.CFrame
-                rootPart.Anchored = true
-            else
-                -- Pagka-off, pakakawalan ang character mo at buburahin ang saved spot
-                rootPart.Anchored = false
-                savedCFrame = nil
+-- 🔒 Lock Position
+Tab:AddSwitch("Lock Position", function(Value)
+    if Value then
+        local currentPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+        getgenv().posLock = game:GetService("RunService").Heartbeat:Connect(function()
+            if game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentPos
             end
+        end)
+    else
+        if getgenv().posLock then
+            getgenv().posLock:Disconnect()
+            getgenv().posLock = nil
         end
     end
 end)
