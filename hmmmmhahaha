@@ -3,7 +3,7 @@ local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/ZorXl
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 
-local window = library:AddWindow("ZorX-Private | Welcome, " .. localPlayer.DisplayName, {
+local window = library:AddWindow("ZorX-Private | Fast Rebirths | Welcome, " .. localPlayer.DisplayName, {
     title_bar = {Color3.fromRGB(180, 0, 0), Color3.fromRGB(40, 0, 0), Color3.fromRGB(0, 0, 0)},
     title_bar_transparency = 0.2,
     background = {Color3.fromRGB(40, 0, 0), Color3.fromRGB(0, 0, 0), Color3.fromRGB(80, 0, 0)},
@@ -206,14 +206,15 @@ end)
 -- Visually toggle Elerium switch checkmark to ON immediately upon loading script
 AntiAFKSwitch:Set(true)
 
-local hideswitch = AutoFarm:AddSwitch("Hide Pets", false, function(state)
+local hideswitch = AutoFarm:AddSwitch("Hide Pets", function(state)
+    -- Fire RemoteEvent
     local args = {
         [1] = state and "hidePets" or "showPets"
     }
-
     game:GetService("ReplicatedStorage").rEvents.showPetsEvent:FireServer(unpack(args))
 end)
 
+-- Set the initial toggle state
 hideswitch:Set(true)
 
 AutoFarm:AddTextBox('Enter Rep Speed', function(p273)
