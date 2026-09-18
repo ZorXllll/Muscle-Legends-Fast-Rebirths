@@ -50,34 +50,42 @@ local AutoFarm = window:AddTab("Farm")
 AutoFarm:Show()
 
 local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local PlaceId = game.PlaceId
 local autoReconnectEnabled = false
 
--- Polling loop para masigurong mahuhuli kahit "Please check your internet" error prompt
+-- 3. Mas mabilis at subok na Auto-Reconnect gamit ang Teleport Logic
 task.spawn(function()
     while task.wait(1) do
         if autoReconnectEnabled then
             pcall(function()
+                -- Check kung lumitaw yung disconnection prompt sa CoreGui
                 local promptGui = CoreGui:FindFirstChild("RobloxPromptGui")
                 if promptGui then
                     local promptOverlay = promptGui:FindFirstChild("promptOverlay")
                     if promptOverlay then
                         for _, child in ipairs(promptOverlay:GetChildren()) do
                             if child.Name == "ErrorPrompt" then
-                                TeleportService:Teleport(PlaceId)
-                                task.wait(3)
+                                -- Subukan i-teleport pabalik sa parehong Place ID
+                                TeleportService:Teleport(PlaceId, Players.LocalPlayer)
+                                task.wait(5)
                             end
                         end
                     end
+                end
+                
+                -- Fallback check kung nawala ang connection sa player state
+                if not Players.LocalPlayer or not game:IsLoaded() then
+                    TeleportService:Teleport(PlaceId)
                 end
             end)
         end
     end
 end)
 
--- Switch para i-on/off ang auto reconnect
-local autoreconnect = AutoFarm:AddSwitch("Enable Auto-Reconnect", function(bool)
+-- 4. Elerium v2 Switch Component
+local autoreconnect = AutoFarm:AddSwitch("Auto-Reconnect", function(bool)
     autoReconnectEnabled = bool
 end)
 
