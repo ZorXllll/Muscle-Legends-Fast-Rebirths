@@ -225,6 +225,27 @@ end)
 -- Set the initial toggle state
 hideswitch:Set(true)
 
+local autospin = AutoFarm:AddSwitch("Auto Spin Wheel", function(state)
+    autoFortuneEnabled = state
+    
+    if autoFortuneEnabled then
+        task.spawn(function()
+            while autoFortuneEnabled do
+                local args = {
+                    [1] = "openFortuneWheel",
+                    [2] = game:GetService("ReplicatedStorage").shared.catalogs.fortuneWheelChances:FindFirstChild("Fortune Wheel")
+                }
+                pcall(function()
+                    game:GetService("ReplicatedStorage").rEvents.openFortuneWheelRemote:InvokeServer(unpack(args))
+                end)
+                task.wait(1)
+            end
+        end)
+    end
+end)
+
+autospin:Set(true)
+
 AutoFarm:AddTextBox('Enter Rep Speed', function(p273)
     local v274 = tonumber(p273)
     if v274 and 0 < v274 then
