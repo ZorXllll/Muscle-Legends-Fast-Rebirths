@@ -646,7 +646,7 @@ local Fastrebs = Tab:AddSwitch("Fast Rebirth", function(p52)
                 -- Equip grinding pets
                 unequipAll()
                 task.wait(0.1)
-                equipPets('Swift Samurai', 'Epic Boss Pet', 'Legendary Boss Pet', 'Mythic Boss Pet')
+                equipPets('Swift Samurai', 'Epic Boss Pet', 'Rainbow Boss Pet', 'Legendary Boss Pet', 'Mythic Boss Pet')
                 
                 -- Mag-ipon ng strength hanggang sa discounted target (200M)
                 while fastRebirth and _LocalPlayer4.leaderstats.Strength.Value < v81 do
