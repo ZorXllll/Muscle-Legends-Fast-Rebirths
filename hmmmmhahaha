@@ -11,18 +11,17 @@ local window = library:AddWindow("ZorX-Private | Fast Rebirths | Welcome, " .. l
     main_color = Color3.fromRGB(200, 0, 0),
     min_size = Vector2.new(600, 400),
     can_resize = true,
+})
 
-    floating_button = {
-        enabled    = true,
-        color      = Color3.fromRGB(0, 0, 0),
-        hover      = Color3.fromRGB(0, 0, 0),
-        icon       = "https://www.roblox.com/Thumbs/Asset.ashx?width=420&height=420&assetId=131276898160614",
-        icon_color = Color3.fromRGB(255, 255, 255),
-        size       = 50,
-        corner     = 6,
-        position   = UDim2.new(0, 20, 0, 80),
-        draggable  = true,
-    },
+library:AddFloatingButton({
+    color      = Color3.fromRGB(0, 0, 0),
+    hover      = Color3.fromRGB(0, 0, 0),
+    icon       = "https://www.roblox.com/Thumbs/Asset.ashx?width=420&height=420&assetId=131276898160614",
+    icon_color = Color3.fromRGB(255, 255, 255),
+    size       = 50,
+    corner     = 5,
+    position   = UDim2.new(0, 20, 0, 80),
+    draggable  = true,
 })
 
 task.spawn(function()
