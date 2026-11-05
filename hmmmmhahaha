@@ -18,7 +18,7 @@ local window = library:AddWindow("ZorX-Private | Fast Rebirths | Welcome, " .. l
         hover      = Color3.fromRGB(0, 0, 0),
         icon       = "https://www.roblox.com/Thumbs/Asset.ashx?width=420&height=420&assetId=131276898160614",
         icon_color = Color3.fromRGB(255, 255, 255),
-        size       = 42,
+        size       = 50,
         corner     = 6,
         position   = UDim2.new(0, 20, 0, 80),
         draggable  = true,
